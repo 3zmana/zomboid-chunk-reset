@@ -1,0 +1,95 @@
+# Builds and tests on Windows and Linux, then packages:
+#   - Windows: a zip of the application folder (ZomboidChunkReset.exe + bundled Java runtime)
+#   - Linux:   an AppImage
+# Each system builds its own package (neither can be built from the other).
+# Pushing a tag such as v0.9.0 also creates a draft GitHub release with both files attached.
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            task: packageWindows
+            artifact: app/build/distributions/*.zip
+          - name: Linux
+            # An older Ubuntu keeps the AppImage compatible with more distributions.
+            os: ubuntu-22.04
+            task: packageLinux
+            artifact: app/build/distributions/*.AppImage
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Caches Gradle and checks that gradle-wrapper.jar is the official one.
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: bash ./gradlew test --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.name }}
+          path: '**/build/reports/tests/'
+
+      - name: Download appimagetool
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+
+      - name: Package
+        run: bash ./gradlew :app:${{ matrix.task }} --stacktrace
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZomboidChunkReset-${{ matrix.name }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create a draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          draft: true
+          generate_release_notes: true

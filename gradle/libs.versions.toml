@@ -1,0 +1,10 @@
+[versions]
+javafx = "21.0.12"
+sqlite = "3.53.2.1"
+junit = "5.14.4"
+junitPlatform = "1.14.4"
+
+[libraries]
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }

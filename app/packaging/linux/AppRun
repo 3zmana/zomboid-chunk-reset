@@ -1,0 +1,4 @@
+#!/bin/sh
+# Entry point of the AppImage: starts the launcher created by jpackage.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/lib/ZomboidChunkReset/bin/ZomboidChunkReset" "$@"

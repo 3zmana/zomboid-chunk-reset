@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+*.iml
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Never commit game saves: they contain player names and other personal data.
+saves/
+*.zip

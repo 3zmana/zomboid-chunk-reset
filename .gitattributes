@@ -1,0 +1,12 @@
+# Keep shell scripts runnable on Linux and batch files runnable on Windows,
+# whatever the line-ending settings of the computer the repository is committed from.
+* text=auto
+gradlew text eol=lf
+*.sh text eol=lf
+AppRun text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.ico binary
+*.jar binary

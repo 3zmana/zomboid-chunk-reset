@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ZomboidChunkReset
+GenericName=Project Zomboid save chunk editor
+Comment=Reset chunks of Project Zomboid saves while protecting chosen areas
+Exec=ZomboidChunkReset
+Icon=zomboidchunkreset
+Categories=Utility;
+Terminal=false

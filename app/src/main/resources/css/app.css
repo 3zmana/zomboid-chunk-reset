@@ -1,0 +1,146 @@
+/* ZomboidChunkReset - application style (on top of JavaFX's default Modena theme). */
+
+.root {
+    -fx-font-size: 13px;
+}
+
+.side-panel,
+.side-panel > .viewport {
+    -fx-background-color: #f3f4f6;
+}
+
+.side-panel {
+    -fx-border-color: #d8dce1;
+    -fx-border-width: 0 0 0 1;
+}
+
+.section {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #e1e4e8;
+    -fx-border-radius: 8;
+    -fx-padding: 10 12 12 12;
+}
+
+.section-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #1f2933;
+    -fx-padding: 0 0 2 0;
+}
+
+.subsection-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #3e4c59;
+    -fx-padding: 6 0 0 0;
+}
+
+.save-name {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.muted {
+    -fx-text-fill: #616e7c;
+}
+
+.value {
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2933;
+}
+
+.danger-number {
+    -fx-text-fill: #b42318;
+}
+
+.issue-text {
+    -fx-text-fill: #8a4b00;
+}
+
+.warning-box {
+    -fx-background-color: #fff4e5;
+    -fx-background-radius: 6;
+    -fx-border-color: #f5c27a;
+    -fx-border-radius: 6;
+    -fx-padding: 6 8;
+    -fx-text-fill: #6b3a00;
+}
+
+.info-box {
+    -fx-background-color: #eef2f6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 8;
+    -fx-text-fill: #3e4c59;
+}
+
+.swatch {
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-background-radius: 3;
+}
+
+.player-swatch {
+    -fx-background-radius: 8;
+    -fx-border-color: #1b1d21;
+    -fx-border-radius: 8;
+    -fx-border-width: 2;
+}
+
+.status-bar {
+    -fx-padding: 5 12;
+    -fx-background-color: #eceff2;
+    -fx-border-color: #d5d9de;
+    -fx-border-width: 1 0 0 0;
+}
+
+.status-bar .label {
+    -fx-text-fill: #3e4c59;
+}
+
+.empty-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e4e7eb;
+}
+
+.empty-hint {
+    -fx-font-size: 14px;
+    -fx-text-fill: #9aa5b1;
+}
+
+.primary-button {
+    -fx-base: #2f6fb3;
+    -fx-font-weight: bold;
+    -fx-padding: 8 18;
+}
+
+.danger-box {
+    -fx-background-color: #fdecea;
+    -fx-background-radius: 6;
+    -fx-border-color: #f1aeb5;
+    -fx-border-radius: 6;
+    -fx-padding: 6 8;
+    -fx-text-fill: #8a1c1c;
+    -fx-font-weight: bold;
+}
+
+.danger-button {
+    -fx-base: #b42318;
+    -fx-font-weight: bold;
+}
+
+.danger-button:disabled {
+    -fx-opacity: 0.45;
+}
+
+.backup-box {
+    -fx-background-color: #fff4e5;
+    -fx-background-radius: 6;
+    -fx-border-color: #f5c27a;
+    -fx-border-radius: 6;
+    -fx-padding: 8 10;
+    -fx-text-fill: #6b3a00;
+    -fx-font-weight: bold;
+}

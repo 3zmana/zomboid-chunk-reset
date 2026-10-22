@@ -90,8 +90,10 @@ The bundled runtime contains `java.base`, `java.desktop`, `java.logging`, `java.
 ## Releasing
 
 1. Set the version in `gradle.properties` (plain numbers, for example `1.0.0`) and update `CHANGELOG.md`.
+   The same file holds `repositoryUrl`, the address shown in **Help > About**.
 2. Commit, then tag and push: `git tag v1.0.0 && git push origin v1.0.0`.
-3. When the workflow has finished, review the draft release on GitHub and publish it.
+3. When the workflow has finished, review the draft release on GitHub and publish it. The release and
+   download badges of the README only count published releases.
 
 ## Translations
 

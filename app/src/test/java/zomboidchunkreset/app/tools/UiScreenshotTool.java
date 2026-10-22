@@ -129,6 +129,23 @@ public final class UiScreenshotTool {
                 (System.nanoTime() - terrainStart) / 1_000_000, fxGet(() -> w.map().model().terrain().loadedCount()));
         shot(stage, out.resolve("02-overview.png"));
 
+        // Help > About: version and repository link.
+        String aboutText = I18n.t("menu.help.about", "ZomboidChunkReset");
+        Platform.runLater(() -> {
+            MenuBar bar = (MenuBar) ((BorderPane) stage.getScene().getRoot()).getTop();
+            for (Menu m : bar.getMenus()) {
+                for (MenuItem item : m.getItems()) {
+                    if (aboutText.equals(item.getText())) {
+                        item.fire();
+                    }
+                }
+            }
+        });
+        Window about = waitForWindow(stage, win -> win.getScene().getRoot().lookup("#about-link") != null);
+        pause(300);
+        shot(about, out.resolve("01b-about.png"));
+        fx(about::hide);
+
         // 3. Select the base with the real (virtual-screen) mouse.
         ChunkBounds base;
         if (arguments.length >= 6) {

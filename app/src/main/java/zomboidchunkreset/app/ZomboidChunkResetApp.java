@@ -23,6 +23,7 @@ public final class ZomboidChunkResetApp extends Application {
 
     @Override
     public void start(Stage stage) {
+        Links.init(getHostServices());
         for (int size : new int[] {16, 32, 48, 64, 128, 256}) {
             var icon = ZomboidChunkResetApp.class.getResource("/icons/icon-" + size + ".png");
             if (icon != null) {

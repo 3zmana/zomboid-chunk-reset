@@ -54,6 +54,16 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// Version and repository address, read by Help > About (single source: gradle.properties).
+tasks.processResources {
+    val info = mapOf(
+        "version" to project.version.toString(),
+        "repository" to (findProperty("repositoryUrl") ?: "").toString(),
+    )
+    inputs.properties(info)
+    filesMatching("app.properties") { expand(info) }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Packaging: a self-contained application folder (Java runtime included) made with jlink and
 // jpackage from the JDK 21 toolchain, then a zip (Windows) or an AppImage (Linux).

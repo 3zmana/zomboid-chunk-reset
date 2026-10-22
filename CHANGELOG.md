@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.0
+
+- **Help > About**: version and link to the source repository.
+- New README presentation (icon, badges, download and documentation tables).
+
 ## 0.10.0 — terrain map
 
 - The map shows the save seen from above, tile by tile: roads, water, grass, tall grass, trees, sand and

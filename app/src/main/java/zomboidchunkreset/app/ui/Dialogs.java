@@ -26,16 +26,22 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
+import zomboidchunkreset.app.AppInfo;
+import zomboidchunkreset.app.Links;
+import zomboidchunkreset.app.ZomboidChunkResetApp;
 import zomboidchunkreset.core.model.ChunkBounds;
 import zomboidchunkreset.core.model.ChunkPos;
 import zomboidchunkreset.core.db.PlayerRecord;
@@ -181,6 +187,9 @@ final class Dialogs {
         }
         box.setPrefWidth(440);
         alert.getDialogPane().setContent(box);
+        if (owner.getScene() != null) {
+            alert.getDialogPane().getStylesheets().addAll(owner.getScene().getStylesheets());
+        }
         alert.showAndWait();
     }
 
@@ -199,6 +208,50 @@ final class Dialogs {
     }
 
     /** The warning shown at every start. */
+    static void about(Window owner) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(owner);
+        alert.setTitle(t("about.title", ZomboidChunkResetApp.NAME));
+        alert.setHeaderText(ZomboidChunkResetApp.NAME + "\n" + t("about.version", AppInfo.version()));
+        var iconUrl = Dialogs.class.getResource("/icons/icon-64.png");
+        if (iconUrl != null) {
+            alert.setGraphic(new ImageView(new Image(iconUrl.toExternalForm())));
+        }
+        Label description = new Label(t("about.description"));
+        description.setWrapText(true);
+        description.setMinHeight(Region.USE_PREF_SIZE);
+        VBox box = new VBox(10, description);
+        String url = AppInfo.repositoryUrl();
+        if (!url.isEmpty()) {
+            Hyperlink link = new Hyperlink(url);
+            link.setId("about-link");
+            link.setPadding(Insets.EMPTY);
+            Label copied = new Label(t("about.copied"));
+            copied.getStyleClass().add("muted");
+            copied.setWrapText(true);
+            copied.setVisible(false);
+            copied.setManaged(false);
+            link.setOnAction(e -> {
+                if (!Links.open(url)) {
+                    copied.setVisible(true);
+                    copied.setManaged(true);
+                }
+            });
+            box.getChildren().addAll(new VBox(2, new Label(t("about.repository")), link, copied));
+        }
+        Label legal = new Label(t("about.legal"));
+        legal.getStyleClass().add("muted");
+        legal.setWrapText(true);
+        legal.setMinHeight(Region.USE_PREF_SIZE);
+        box.getChildren().add(legal);
+        box.setPrefWidth(440);
+        alert.getDialogPane().setContent(box);
+        if (owner.getScene() != null) {
+            alert.getDialogPane().getStylesheets().addAll(owner.getScene().getStylesheets());
+        }
+        alert.showAndWait();
+    }
+
     static void startupWarning(Window owner) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.initOwner(owner);

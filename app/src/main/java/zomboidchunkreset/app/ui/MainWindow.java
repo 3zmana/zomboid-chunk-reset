@@ -305,7 +305,8 @@ public final class MainWindow implements SidePanel.Actions {
                 item(t("menu.language.add"), null, () -> Dialogs.addLanguage(stage, settings.languagesFolder())));
 
         MenuItem controls = item(t("menu.help.controls"), "F1", () -> Dialogs.showControls(stage));
-        Menu help = new Menu(t("menu.help"), null, controls);
+        MenuItem about = item(t("menu.help.about", ZomboidChunkResetApp.NAME), null, () -> Dialogs.about(stage));
+        Menu help = new Menu(t("menu.help"), null, controls, new SeparatorMenuItem(), about);
 
         saveDependentItems.addAll(List.of(rescan, importSel, exportSel, selectAll, invert, clear, byCoordinates, zoomIn,
                 zoomOut, fit, goTo));

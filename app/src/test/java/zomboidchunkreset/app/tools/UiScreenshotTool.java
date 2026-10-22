@@ -74,7 +74,7 @@ public final class UiScreenshotTool {
             // Xvfb has no window manager: without decorations, JavaFX's screen coordinates match the pointer's.
             stage.initStyle(StageStyle.UNDECORATED);
             AppSettings settings = new AppSettings(Path.of(arguments[1]).resolve("settings"));
-            open(stage, settings, MainWindow.State.EMPTY);
+            open(stage, settings, MainWindow.State.empty());
             Platform.runLater(window::showStartupWarning);
             Thread script = new Thread(() -> {
                 try {
@@ -123,6 +123,10 @@ public final class UiScreenshotTool {
             return n != null && n.isVisible() ? ((Label) n).getText() : null;
         });
         System.out.println("running-game warning: " + running);
+        long terrainStart = System.nanoTime();
+        waitFor(() -> !window.terrainLoading(), 300);
+        System.out.printf("map details read in %d ms, %d chunks with a top view%n",
+                (System.nanoTime() - terrainStart) / 1_000_000, fxGet(() -> w.map().model().terrain().loadedCount()));
         shot(stage, out.resolve("02-overview.png"));
 
         // 3. Select the base with the real (virtual-screen) mouse.
@@ -137,6 +141,19 @@ public final class UiScreenshotTool {
         double cx = (base.minX() + base.maxX() + 1) / 2.0 * 8;
         double cy = (base.minY() + base.maxY() + 1) / 2.0 * 8;
         MapView map = w.map();
+        fx(() -> map.centerOnSquare(cx, cy));
+        fx(map::zoomIn);
+        fx(map::zoomIn);
+        pause(400);
+        shot(stage, out.resolve("02b-terrain-close.png"));
+        fx(() -> ((javafx.scene.control.ScrollPane) ((BorderPane) stage.getScene().getRoot()).getRight()).setVvalue(1));
+        pause(300);
+        shot(stage, out.resolve("02d-legend.png"));
+        fx(() -> ((javafx.scene.control.ScrollPane) ((BorderPane) stage.getScene().getRoot()).getRight()).setVvalue(0));
+        fx(() -> map.showTerrainProperty().set(false));
+        pause(300);
+        shot(stage, out.resolve("02c-plain-close.png"));
+        fx(() -> map.showTerrainProperty().set(true));
         fx(() -> map.centerOnSquare(cx, cy));
         fx(map::zoomOut);
         pause(300);
@@ -201,6 +218,7 @@ public final class UiScreenshotTool {
         shot(report, out.resolve("05-report.png"));
         fx(report::hide);
         waitFor(() -> !w.busy() && w.index() != null && w.index().chunks().size() < before.size() + 1, 120);
+        waitFor(() -> !window.terrainLoading(), 300);
         pause(800);
         shot(stage, out.resolve("06-after-delete.png"));
         SaveIndex after = SaveScanner.scan(save);

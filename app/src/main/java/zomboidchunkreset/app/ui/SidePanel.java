@@ -34,6 +34,7 @@ import zomboidchunkreset.core.reset.ResetOptions;
 import zomboidchunkreset.core.reset.ResetPlan;
 import zomboidchunkreset.core.save.SaveIndex;
 import zomboidchunkreset.core.save.ScanIssue;
+import zomboidchunkreset.core.terrain.TerrainCategory;
 
 /** Right-hand panel: save summary, selection, action settings with a live preview, legend. */
 final class SidePanel extends ScrollPane {
@@ -59,6 +60,10 @@ final class SidePanel extends ScrollPane {
         void optionsChanged();
     }
 
+    private final VBox terrainLegend = new VBox(6);
+    private final VBox plainLegend = new VBox(6);
+    private final Label terrainNote = muted(t("legend.terrain.note"));
+    private final Label plainNote = muted(t("legend.shade"));
     private final Actions actions;
 
     // Save
@@ -196,14 +201,34 @@ final class SidePanel extends ScrollPane {
         VBox action = section(t("section.action"), deleteSelected, keepSelected, alsoDelete, zombies, animals,
                 isoRegions, vehicles, previewTitle, preview, warnings, simulate, delete, note);
 
-        VBox legend = section(t("section.legend"),
+        int grass = TerrainCategory.GRASS_MEDIUM.ordinal();
+        terrainLegend.getChildren().addAll(
+                swatch(Palette.terrainColor(TerrainCategory.WATER), t("legend.terrain.water")),
+                swatch(Palette.terrainColor(TerrainCategory.ROAD), t("legend.terrain.road")),
+                swatch(Palette.terrainColor(TerrainCategory.GRASS_MEDIUM), t("legend.terrain.grass")),
+                swatch(Palette.terrainColor(TerrainCategory.TALL_GRASS), t("legend.terrain.tallGrass")),
+                swatch(Palette.terrainColor(TerrainCategory.TREE), t("legend.terrain.tree")),
+                swatch(Palette.terrainColor(TerrainCategory.SAND), t("legend.terrain.sand")),
+                swatch(Palette.terrainColor(TerrainCategory.ROOF), t("legend.terrain.roof")),
+                swatch(Palette.terrainColor(TerrainCategory.ROOF_FLAT), t("legend.terrain.flatRoof")),
+                swatch(Palette.terrainColor(TerrainCategory.WALL), t("legend.terrain.wall")),
+                swatch(Palette.terrainColor(TerrainCategory.NEUTRAL), t("legend.terrain.other")),
+                swatch(Palette.terrain(Palette.STATE_RESET)[grass], t("legend.terrain.deleted")),
+                swatch(Palette.terrain(Palette.STATE_PROTECTED)[grass], t("legend.terrain.protected")),
+                swatch(Palette.kept(5), t("legend.terrain.plain")));
+        plainLegend.getChildren().addAll(
                 swatch(Palette.kept(5), t("legend.kept")),
                 swatch(Palette.deleted(5), t("legend.deleted")),
-                swatch(Palette.protectedChunk(5), t("legend.protected")),
+                swatch(Palette.protectedChunk(5), t("legend.protected")));
+        VBox legend = section(t("section.legend"),
+                terrainLegend,
+                plainLegend,
                 swatch(Palette.SELECTED_EMPTY_DELETE, t("legend.selectedEmpty")),
                 swatch(Palette.EMPTY_A, t("legend.notGenerated")),
                 playerSwatch(),
-                muted(t("legend.shade")));
+                terrainNote,
+                plainNote);
+        setTerrainShown(true);
 
         content.getChildren().addAll(save, selection, action, legend);
         content.setPadding(new Insets(12));
@@ -357,6 +382,18 @@ final class SidePanel extends ScrollPane {
         value.setMinWidth(Region.USE_PREF_SIZE); // numbers never get cut; labels wrap instead
         grid.add(l, 0, row);
         grid.add(value, 1, row);
+    }
+
+    /** Shows the legend of the terrain view or of the plain view. */
+    public void setTerrainShown(boolean shown) {
+        for (Node n : List.of(terrainLegend, terrainNote)) {
+            n.setVisible(shown);
+            n.setManaged(shown);
+        }
+        for (Node n : List.of(plainLegend, plainNote)) {
+            n.setVisible(!shown);
+            n.setManaged(!shown);
+        }
     }
 
     private static Tooltip tip(String key) {

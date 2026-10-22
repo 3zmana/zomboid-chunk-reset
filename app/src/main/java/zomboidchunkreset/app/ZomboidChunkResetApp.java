@@ -31,7 +31,7 @@ public final class ZomboidChunkResetApp extends Application {
         }
         settings = AppSettings.load();
         I18n.use(settings.language(), settings.languagesFolder());
-        open(stage, MainWindow.State.EMPTY);
+        open(stage, MainWindow.State.empty());
         Platform.runLater(window::showStartupWarning);
     }
 

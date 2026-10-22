@@ -19,7 +19,8 @@ import java.nio.file.StandardOpenOption;
  * </pre>
  *
  * The file does not contain its own chunk coordinates: they only come from its path.
- * The rest of the file is not decoded by this program, which only deletes whole files.
+ * The rest of the file is only read (never written) to draw the map, see
+ * {@code zomboidchunkreset.core.terrain.ChunkContentReader}; deletion always removes whole files.
  */
 public record ChunkFileHeader(int flag, int worldVersion, int declaredLength, long checksum) {
 

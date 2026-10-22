@@ -45,21 +45,36 @@ If Project Zomboid seems to be running, a red warning appears in this section (s
 
 ## 4. The map
 
-Each square of the grid is one **chunk** (8 × 8 tiles). Thick lines are **cell** borders
-(32 × 32 chunks, 256 × 256 tiles). Only chunks the game has saved have a colour; the dark checkerboard
-is land never generated.
+The map is made of **chunks** (8 × 8 tiles). Thick lines are **cell** borders (32 × 32 chunks,
+256 × 256 tiles). Only chunks the game has saved are drawn; the dark checkerboard is land never
+generated.
 
-Colours show what the current action would do:
+### Terrain view (default)
 
-| Colour | Meaning |
+Right after opening a save, the program reads the content of every saved chunk in the background
+(the status bar shows the progress) and draws it seen from above, one pixel per tile when zoomed in:
+roads, water, grass, tall grass, trees, sand and dirt, walls and fences, and the **roofs** of buildings.
+Upper floors and flat roofs are grey. This reading never changes anything in the save, and needs no
+game files. Tiles added by mods are drawn in a neutral grey.
+
+The colours also show what the current action would do:
+
+| Look | Meaning |
 |---|---|
-| Slate blue | chunk kept |
-| Red | chunk that will be deleted |
-| Green | selected chunk protected ("keep" mode) |
+| Natural colours | chunk kept |
+| Tinted red | chunk that will be deleted |
+| Tinted green | selected chunk protected ("keep" mode) |
+| Plain slate blue | chunk whose content could not be read (yet) |
 | Dark red / dark green | selected position without a saved chunk |
 
-Lighter shades mean bigger chunk files, which makes built-up areas visible. Yellow dots are players
-(with their names when zoomed in).
+**View > Show terrain and roofs** (**Ctrl+T**) switches to the plain view.
+
+### Plain view
+
+Each chunk is one colour: slate blue when kept, red when it will be deleted, green when protected.
+Lighter shades mean bigger chunk files, which makes built-up areas visible.
+
+Yellow dots are players (with their names when zoomed in).
 
 Navigation: **mouse wheel** to zoom around the cursor, **right or middle drag** to move, **Ctrl+0** to
 fit the whole save, **Ctrl+G** to go to in-game coordinates.
@@ -184,3 +199,5 @@ Settings and language files are stored in `%APPDATA%\ZomboidChunkReset` (Windows
 - Only Build 42 saves are supported (verified on world version 249).
 - Running-game detection is a heuristic, and cannot see a server on another machine.
 - The game's handling of global-object entries in regenerated areas is not known (§9).
+- On the map, tiles added by mods are grey, and a few rare objects (characters or animals stored in a
+  chunk) stop the reading of that chunk: its remaining tiles take the chunk's most common colour.

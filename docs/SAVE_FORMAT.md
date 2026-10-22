@@ -46,8 +46,63 @@ Header, big-endian:
 | 5      | 4    | declared length | equals the file size in every file            |
 | 9      | 8    | presumed checksum | not verified                                |
 
-The file does **not** contain its own coordinates: the path is the only source. The rest of the
-file is not decoded; the program only deletes whole files.
+The file does **not** contain its own coordinates: the path is the only source. Deletion always
+removes whole files. The rest of the file is only **read** to draw the map (next section).
+
+## Chunk content and sprite ids — verified, read only
+
+Used only to draw the map; nothing here is ever written. The layout follows the description of the
+[pzdataspec](https://github.com/cff29546/pzdataspec) project (MIT licence, version-249 description),
+then was checked on two real saves (one server, one single-player, 57 030 chunk files).
+
+Verified on those files:
+
+- After the header come blending and attachment state, levels, floor blood, then the **64 square
+  columns** of the chunk. Column `i` is at local `x = i / 8`, `y = i % 8`. Each column starts with a
+  64-bit mask of the levels present (bit `level + 32`), then one record per level, lowest first.
+- Each square record holds erosion data, a flag byte, its objects, optional extra data (dead bodies,
+  table, trap position) and a visibility byte. Objects have no size prefix: every object type must be
+  decoded to reach the next square. Items inside containers and entity components do have size
+  prefixes and are skipped.
+- After the squares: erosion state of the chunk, generators, vehicles (none in the reference files),
+  loot respawn hour and spawned rooms. **Decoding ends exactly at the last byte of all 57 030 files.**
+- Hutch: the integer before the animal count is the size of the animal block, count included
+  (one occurrence).
+- The first object of each ground square is a floor tile in 99.99 % of 3.6 million squares.
+- Roofs are stored at their real square on upper levels (no visual offset): about 84 % of roof squares lie
+  over a building floor, the rest being eaves.
+
+**Sprite ids.** Each object stores the id of its tile. Ids are not listed in the save
+(`WorldDictionary` holds no sprite table in the reference saves); they follow from the game's
+definition files (`media/*.tiles`). Tile `i` of the tilesheet numbered `n` has the id:
+
+| Definition file | Id |
+|---|---|
+| `newtiledefinitions.tiles` | `(n − 1) × 1024 + i` |
+| `tiledefinitions_erosion.tiles` | `1048576 + (n − 1) × 512 + i` |
+| `jumbo_trees_big.tiles` | `2097152 + (n − 1) × 512 + i` |
+| `jumbo_trees.tiles` | `2621440 + (n − 1) × 512 + i` |
+
+Every sprite id found in the reference saves resolves with this scheme (5.6 million objects), and tree
+objects always resolve to tree tilesheets.
+
+`.tiles` layout (little-endian): `tdef`, int version, int tilesheet count; per tilesheet a name and an
+image name (each ended by `\n`), int columns, rows, tilesheet number, tile count; per tile an int
+property count and `key\n value\n` pairs. All bytes of the seven vanilla files are accounted for.
+
+Not verified / not supported:
+
+- Ids of `tiledefinitions_overlays.tiles` and `tiledefinitions_b42chunkcaching.tiles` (never seen in the
+  reference saves), and of tiles added by mods (each mod numbers its own files).
+- `tiledefinitions_noiseworks.patch.tiles` gives partial property lists; the program merges them into
+  the original properties (merging or ignoring the patch gives the same map colours).
+- Object types absent from the reference saves are decoded from the description only. Characters,
+  animals and vehicles stored inside a chunk are not supported: decoding of that chunk stops there.
+- Other world versions: a chunk is used only if its decoding ends exactly at the end of the file.
+
+The application ships a small table (sprite id → kind of tile, about 3 KB) derived once from the
+vanilla `.tiles` files; no tile name and no game file is included. See
+[DEVELOPMENT.md](DEVELOPMENT.md#tile-table) to rebuild it.
 
 ## `isoregiondata/` — verified layout
 

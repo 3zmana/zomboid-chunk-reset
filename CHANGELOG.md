@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 — terrain map
+
+- The map shows the save seen from above, tile by tile: roads, water, grass, tall grass, trees, sand and
+  dirt, walls and fences, and building roofs. It is read in the background from the chunk files only
+  (read-only, no game files needed) and kept in memory, so scanning again after a deletion is quick.
+- Chunks to be deleted are tinted red and protected chunks green; **View > Show terrain and roofs**
+  (Ctrl+T) switches back to the plain view. New legend.
+- Chunk content decoder and sprite id scheme documented in `docs/SAVE_FORMAT.md` and verified on real
+  saves; credit to the pzdataspec project.
+
 ## 0.9.0 — first version
 
 - Opens Project Zomboid Build 42 saves, single-player and dedicated server, and checks their

@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Point2D;
 import javafx.geometry.VPos;
@@ -52,6 +54,7 @@ public final class MapView extends Region {
     private final Viewport viewport = new Viewport();
     private final SelectionState selection;
     private final ObjectProperty<ResetMode> mode = new SimpleObjectProperty<>(ResetMode.DELETE_SELECTED);
+    private final BooleanProperty showTerrain = new SimpleBooleanProperty(true);
     private final ReadOnlyObjectWrapper<ChunkPos> hovered = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(viewport.scale());
 
@@ -75,6 +78,7 @@ public final class MapView extends Region {
         setMinSize(200, 200);
         selection.addListener(this::requestRedraw);
         mode.addListener((obs, a, b) -> requestRedraw());
+        showTerrain.addListener((obs, a, b) -> requestRedraw());
 
         setOnMousePressed(this::onPressed);
         setOnMouseDragged(this::onDragged);
@@ -116,6 +120,11 @@ public final class MapView extends Region {
     /** Whether the map colours chunks for "delete selected" or "keep selected". */
     public ObjectProperty<ResetMode> modeProperty() {
         return mode;
+    }
+
+    /** Whether the chunks' top views (terrain, roofs) are drawn where known. */
+    public BooleanProperty showTerrainProperty() {
+        return showTerrain;
     }
 
     /** The chunk under the mouse, or null. */
@@ -217,7 +226,8 @@ public final class MapView extends Region {
             buffer = new int[pw * ph];
         }
         ResetMode currentMode = mode.get();
-        MapRenderer.render(buffer, pw, ph, ratio, viewport, model, selection.selection(), currentMode);
+        MapRenderer.render(buffer, pw, ph, ratio, viewport, model, selection.selection(), currentMode,
+                showTerrain.get());
         image.getPixelWriter().setPixels(0, 0, pw, ph, PixelFormat.getIntArgbPreInstance(), buffer, 0, pw);
         gc.drawImage(image, 0, 0, pw / ratio, ph / ratio);
 
@@ -239,7 +249,8 @@ public final class MapView extends Region {
         }
         gc.setLineWidth(1 / ratio);
         gc.setLineCap(StrokeLineCap.BUTT);
-        if (s >= 10) {
+        // Chunk lines only when chunks are big enough; later with terrain, whose detail they would hide.
+        if (s >= (showTerrain.get() ? 24 : 10)) {
             gc.setStroke(Color.web(Palette.CHUNK_LINE));
             strokeLines(gc, 1, left, right, top, bottom, ratio);
         }

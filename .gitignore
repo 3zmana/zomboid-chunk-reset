@@ -10,3 +10,6 @@ Thumbs.db
 # Never commit game saves: they contain player names and other personal data.
 saves/
 *.zip
+
+# Game files must never be committed (copyright); only the derived tile table is.
+*.tiles

@@ -12,7 +12,9 @@ core/   save reading, deletion planning and execution — no user-interface code
   reset/      ResetPlanner (pure computation) and ResetExecutor (simulate / apply)
   safety/     running-game detection
   json/       a small JSON reader/writer
-  src/testFixtures/  FakeSave: synthetic saves for tests (shared with app)
+  terrain/    read-only chunk content decoder, tile table, top view of chunks for the map
+  src/testFixtures/  FakeSave, FakeChunk: synthetic saves and chunk files for tests (shared with app)
+  src/tools/  TileTableGenerator (development only, see "Tile table")
 app/    JavaFX interface
   map/        Viewport, MapModel, MapRenderer (pure, tested) and the MapView canvas
   ui/         main window, side panel, dialogs, progress window
@@ -31,14 +33,31 @@ Requirements: JDK 21. Gradle and every library (JavaFX included) are downloaded 
 
 ## Tests
 
-- Unit tests run on synthetic saves built by `FakeSave` (layouts copied from real saves, invented data).
-- `RealSaveIntegrationTest` and `RealSaveResetTest` run on real saves when `ZCR_REAL_SAVES` lists save
-  folders (`;`-separated on Windows, `:` elsewhere). The first only reads and checks every format
-  assumption; the second resets temporary copies and checks the result. Both fail if the given saves
-  are modified. Never commit saves: they contain player names.
+- Unit tests run on synthetic saves built by `FakeSave` and synthetic chunk files built by `FakeChunk`
+  (layouts copied from real saves, invented data).
+- `RealSaveIntegrationTest`, `RealSaveResetTest` and `RealSaveTerrainTest` run on real saves when
+  `ZCR_REAL_SAVES` lists save folders (`;`-separated on Windows, `:` elsewhere). The first only reads
+  and checks every format assumption; the second resets temporary copies and checks the result; the
+  third decodes every chunk and checks that decoding ends at the end of each file and that ground tiles
+  are known floors. All fail if the given saves are modified. Never commit saves: they contain player
+  names.
 - `app/src/test/java/.../tools/UiScreenshotTool.java` drives the real window with the system mouse and
   writes screenshots. It ends with a real deletion: run it on a copy of a save only. It needs a display
   (for example `xvfb-run` on Linux).
+
+## Tile table
+
+The map colours come from `core/src/main/resources/zomboidchunkreset/core/terrain/tile-table.bin`, a
+small table (sprite id → kind of tile) derived from the game's tile definition files. It contains only
+numbers. To rebuild it after a game update, from a Project Zomboid installation (never commit game
+files):
+
+```
+./gradlew :core:generateTileTable -PpzMedia="<Project Zomboid>/media"
+```
+
+The id scheme and the classification rules are in `TileTableBuilder` and `TileClassifier`, and are
+documented in [SAVE_FORMAT.md](SAVE_FORMAT.md). Run `RealSaveTerrainTest` on real saves afterwards.
 
 ## Packaging
 

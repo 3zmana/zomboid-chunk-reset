@@ -15,7 +15,8 @@ import zomboidchunkreset.core.save.SaveIndex;
 /**
  * What the map displays, derived once from a {@link SaveIndex}: a dense grid of chunk "levels"
  * (0 = no chunk file, 1..{@link #LEVELS} = file size bucket) over a cell-aligned region, plus
- * player markers. No JavaFX dependency.
+ * player markers, plus a {@link TerrainLayer} filled in the background with the chunks' top views.
+ * No JavaFX dependency.
  */
 public final class MapModel {
 
@@ -30,12 +31,14 @@ public final class MapModel {
     private final ChunkBounds dataBounds;
     private final byte[] levels;
     private final List<PlayerMarker> players;
+    private final TerrainLayer terrain;
 
     private MapModel(ChunkBounds region, ChunkBounds dataBounds, byte[] levels, List<PlayerMarker> players) {
         this.region = region;
         this.dataBounds = dataBounds;
         this.levels = levels;
         this.players = List.copyOf(players);
+        this.terrain = new TerrainLayer(region);
     }
 
     /** Builds the model of a scanned save. */
@@ -111,5 +114,10 @@ public final class MapModel {
     /** Player markers. */
     public List<PlayerMarker> players() {
         return players;
+    }
+
+    /** Top views of the chunks (filled in the background). */
+    public TerrainLayer terrain() {
+        return terrain;
     }
 }

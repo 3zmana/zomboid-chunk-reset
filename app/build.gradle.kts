@@ -146,6 +146,7 @@ val packageWindows by tasks.registering(Zip::class) {
     from(packagingDir.map { it.dir("image") })
     from(rootProject.file("LICENSE")) { into(appName) }
     from(rootProject.file("README.md")) { into(appName) }
+    from(rootProject.file("THIRD-PARTY-NOTICES.md")) { into(appName) }
 }
 
 val linuxAppDir by tasks.registering(Sync::class) {
@@ -162,6 +163,7 @@ val linuxAppDir by tasks.registering(Sync::class) {
     from("packaging/linux") { include("*.desktop", "*.png") }
     from("packaging/linux/zomboidchunkreset.png") { rename { ".DirIcon" } }
     from(rootProject.file("LICENSE")) { into("usr/share/doc/zomboidchunkreset") }
+    from(rootProject.file("THIRD-PARTY-NOTICES.md")) { into("usr/share/doc/zomboidchunkreset") }
 }
 
 val packageLinux by tasks.registering(Exec::class) {

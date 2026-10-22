@@ -21,6 +21,7 @@ public final class AppSettings {
     private static final String FILE = "settings.properties";
     private static final String LANGUAGE = "language";
     private static final String LAST_FOLDER = "lastFolder";
+    private static final String SHOW_TERRAIN = "showTerrain";
 
     private final Path folder;
     private final Properties values = new Properties();
@@ -92,6 +93,15 @@ public final class AppSettings {
         if (path != null) {
             values.setProperty(LAST_FOLDER, path.toString());
         }
+    }
+
+    /** Whether the map draws terrain and roofs (on by default). */
+    public boolean showTerrain() {
+        return !"false".equals(values.getProperty(SHOW_TERRAIN));
+    }
+
+    public void setShowTerrain(boolean show) {
+        values.setProperty(SHOW_TERRAIN, Boolean.toString(show));
     }
 
     /** Writes the settings; failures are ignored (settings are a convenience). */

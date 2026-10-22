@@ -14,6 +14,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
@@ -22,6 +24,7 @@ import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -65,14 +68,30 @@ import zomboidchunkreset.core.save.SaveScanner;
 import zomboidchunkreset.core.save.ScanOptions;
 import zomboidchunkreset.core.selection.ChunkSelection;
 import zomboidchunkreset.core.selection.SelectionFile;
+import zomboidchunkreset.core.terrain.TerrainLoader;
+import zomboidchunkreset.core.terrain.TileTable;
 
 /** The main window: menus, map, side panel and status bar. */
 public final class MainWindow implements SidePanel.Actions {
 
-    /** What survives rebuilding the window (for example after a language change). */
-    public record State(SaveIndex index, ChunkSelection selection, ResetMode mode, ResetOptions options) {
-        public static final State EMPTY = new State(null, new ChunkSelection(), ResetMode.DELETE_SELECTED,
-                ResetOptions.ALL);
+    /**
+     * What survives rebuilding the window (for example after a language change).
+     *
+     * @param terrainCache chunk top views already read, so they are not read again
+     */
+    public record State(SaveIndex index, ChunkSelection selection, ResetMode mode, ResetOptions options,
+                        TerrainLoader.Cache terrainCache) {
+        /** Nothing open. */
+        public static State empty() {
+            return new State(null, new ChunkSelection(), ResetMode.DELETE_SELECTED, ResetOptions.ALL,
+                    new TerrainLoader.Cache());
+        }
+    }
+
+    /** Background reading of the chunks' top views for the map. */
+    private static final class TerrainJob {
+        final AtomicBoolean cancelled = new AtomicBoolean();
+        Thread thread;
     }
 
     private final Stage stage;
@@ -86,6 +105,9 @@ public final class MainWindow implements SidePanel.Actions {
     private final Label zoomLabel = new Label();
     private final ProgressBar scanProgress = new ProgressBar();
     private final Label scanLabel = new Label(t("status.scanning"));
+    private final Label terrainLabel = new Label();
+    private final TerrainLoader.Cache terrainCache;
+    private volatile TerrainJob terrainJob;
     private final HBox scanBox;
     private final VBox emptyState;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
@@ -107,6 +129,7 @@ public final class MainWindow implements SidePanel.Actions {
         this.stage = stage;
         this.settings = settings;
         this.languageChanger = languageChanger;
+        this.terrainCache = initial.terrainCache();
 
         Button cancelScan = new Button(t("button.cancel"));
         cancelScan.setOnAction(e -> {
@@ -122,7 +145,10 @@ public final class MainWindow implements SidePanel.Actions {
 
         HBox.setHgrow(hoverLabel, Priority.ALWAYS);
         hoverLabel.setMaxWidth(Double.MAX_VALUE);
-        HBox status = new HBox(16, hoverLabel, scanBox, selectionLabel, zoomLabel);
+        terrainLabel.getStyleClass().add("muted");
+        terrainLabel.setVisible(false);
+        terrainLabel.setManaged(false);
+        HBox status = new HBox(16, hoverLabel, scanBox, terrainLabel, selectionLabel, zoomLabel);
         status.getStyleClass().add("status-bar");
         status.setAlignment(Pos.CENTER_LEFT);
 
@@ -178,6 +204,7 @@ public final class MainWindow implements SidePanel.Actions {
         });
 
         map.modeProperty().bind(side.modeProperty());
+        map.showTerrainProperty().set(settings.showTerrain());
         map.hoveredProperty().addListener((obs, a, b) -> updateHover(b));
         map.zoomProperty().addListener((obs, a, b) -> updateZoom());
         selection.addListener(this::selectionChanged);
@@ -203,12 +230,13 @@ public final class MainWindow implements SidePanel.Actions {
         if (scanTask != null) {
             scanTask.cancel(true);
         }
+        stopTerrain(false);
         worker.shutdownNow();
     }
 
     /** What to keep when the window is rebuilt. */
     public State state() {
-        return new State(index, selection.snapshot(), side.modeProperty().get(), side.options());
+        return new State(index, selection.snapshot(), side.modeProperty().get(), side.options(), terrainCache);
     }
 
     /** The reminder shown at every start: work on a copy. */
@@ -248,7 +276,17 @@ public final class MainWindow implements SidePanel.Actions {
         MenuItem zoomOut = item(t("menu.view.zoomOut"), "Shortcut+Minus", map::zoomOut);
         MenuItem fit = item(t("menu.view.fit"), "Shortcut+0", map::fit);
         MenuItem goTo = item(t("menu.view.goTo"), "Shortcut+G", this::goTo);
-        Menu view = new Menu(t("menu.view"), null, zoomIn, zoomOut, fit, new SeparatorMenuItem(), goTo);
+        CheckMenuItem terrain = new CheckMenuItem(t("menu.view.terrain"));
+        terrain.setAccelerator(KeyCombination.keyCombination("Shortcut+T"));
+        terrain.selectedProperty().bindBidirectional(map.showTerrainProperty());
+        terrain.selectedProperty().addListener((obs, a, b) -> {
+            settings.setShowTerrain(b);
+            settings.save();
+            side.setTerrainShown(b);
+        });
+        side.setTerrainShown(terrain.isSelected());
+        Menu view = new Menu(t("menu.view"), null, zoomIn, zoomOut, fit, new SeparatorMenuItem(), terrain,
+                new SeparatorMenuItem(), goTo);
 
         Menu language = new Menu(t("menu.language"));
         ToggleGroup languages = new ToggleGroup();
@@ -369,7 +407,9 @@ public final class MainWindow implements SidePanel.Actions {
         if (!keepSelection) {
             selection.reset();
         }
-        map.setModel(MapModel.of(newIndex));
+        MapModel model = MapModel.of(newIndex);
+        map.setModel(model);
+        startTerrain(model, newIndex);
         side.showSave(newIndex);
         side.setRunningWarning(null);
         stage.setTitle(ZomboidChunkResetApp.NAME + " — " + newIndex.root().getFileName());
@@ -377,6 +417,93 @@ public final class MainWindow implements SidePanel.Actions {
         updateHover(null);
         selectionChanged();
         checkRunningGame(newIndex.root());
+    }
+
+    // ------------------------------------------------------------------ map details (terrain)
+
+    /** Reads the chunks' top views in the background; the map fills in as they arrive. */
+    private void startTerrain(MapModel model, SaveIndex idx) {
+        stopTerrain(false);
+        List<ChunkPos> positions = new ArrayList<>(idx.chunks().keySet());
+        if (positions.isEmpty()) {
+            showTerrainProgress(-1);
+            return;
+        }
+        TerrainJob job = new TerrainJob();
+        terrainJob = job;
+        int total = positions.size();
+        int threads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() - 1));
+        AtomicInteger done = new AtomicInteger();
+        AtomicLong lastUpdate = new AtomicLong();
+        showTerrainProgress(0);
+        job.thread = new Thread(() -> {
+            try {
+                TerrainLoader.load(idx.root(), positions, TileTable.bundled(), terrainCache, threads, (pos, t) -> {
+                    model.terrain().put(pos.x(), pos.y(), t);
+                    int d = done.incrementAndGet();
+                    long now = System.nanoTime();
+                    long last = lastUpdate.get();
+                    if (now - last > 250_000_000L && lastUpdate.compareAndSet(last, now)) {
+                        Platform.runLater(() -> {
+                            if (terrainJob == job) {
+                                showTerrainProgress((int) (100L * d / total));
+                                map.requestRedraw();
+                            }
+                        });
+                    }
+                }, job.cancelled::get);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (RuntimeException e) {
+                // The map keeps its plain colours for what could not be read.
+            }
+            Platform.runLater(() -> {
+                if (terrainJob == job) {
+                    terrainJob = null;
+                    showTerrainProgress(-1);
+                    map.requestRedraw();
+                }
+            });
+        }, "zcr-terrain-main");
+        job.thread.setDaemon(true);
+        job.thread.start();
+    }
+
+    /** Stops reading top views; with {@code wait}, until no chunk file is open any more. */
+    private void stopTerrain(boolean wait) {
+        TerrainJob job = terrainJob;
+        if (job == null) {
+            return;
+        }
+        terrainJob = null;
+        job.cancelled.set(true);
+        if (wait && job.thread != null) {
+            try {
+                job.thread.join(15_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        if (Platform.isFxApplicationThread()) {
+            showTerrainProgress(-1);
+        } else {
+            Platform.runLater(() -> showTerrainProgress(-1));
+        }
+    }
+
+    /** Shows the loading percentage, or hides it with a negative value. */
+    private void showTerrainProgress(int percent) {
+        boolean visible = percent >= 0;
+        terrainLabel.setVisible(visible);
+        terrainLabel.setManaged(visible);
+        if (visible) {
+            terrainLabel.setText(t("status.terrain", percent));
+        }
+    }
+
+    /** Whether top views are still being read (for tests and tools). */
+    public boolean terrainLoading() {
+        return terrainJob != null;
     }
 
     private void checkRunningGame(Path root) {
@@ -633,6 +760,8 @@ public final class MainWindow implements SidePanel.Actions {
         ProgressWindow progress = new ProgressWindow(stage);
         AtomicLong lastUpdate = new AtomicLong();
         Thread thread = new Thread(() -> {
+            // No chunk file may stay open while files are deleted (Windows refuses to delete open files).
+            stopTerrain(true);
             ResetReport report = ResetExecutor.run(plan, ResetExecutor.Mode.APPLY, (done, total) -> {
                 long now = System.nanoTime();
                 if (done == total || now - lastUpdate.get() > 50_000_000L) {
@@ -646,6 +775,8 @@ public final class MainWindow implements SidePanel.Actions {
                 Dialogs.showReport(stage, report);
                 if (report.changesMade()) {
                     openSave(plan.index().root(), true);
+                } else if (index != null && map.model() != null) {
+                    startTerrain(map.model(), index); // resume (already read chunks come from the cache)
                 }
             });
         }, "zcr-delete");

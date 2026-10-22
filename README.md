@@ -30,15 +30,16 @@ Get the latest version from the [Releases](../../releases) page:
    `Zomboid/Saves/Multiplayer/<server name>` (or drop the folder on the window).
 2. Select your base on the map (left drag), or with **Edit > Select by coordinates…** using in-game
    coordinates.
-3. Choose **Keep the selected chunks, delete all the others**. The map turns red where chunks will be
-   deleted and green where they are protected.
+3. Choose **Keep the selected chunks, delete all the others**. The map is tinted red where chunks will
+   be deleted and green where they are protected.
 4. Check the preview, and **Simulate** if you want the exact list of what would be deleted.
 5. **Delete…**, confirm, and let the program scan the save again.
 
 ## Features
 
-- Chunk map with zoom, panning, cell borders, players, and coordinates under the mouse (chunk, cell,
-  in-game X/Y).
+- Map drawn from the save itself: roads, water, grass, trees, roofs and walls, square by square (read
+  only from the chunk files, no game files needed), with zoom, panning, cell borders, players, and
+  coordinates under the mouse (chunk, cell, in-game X/Y).
 - Selection with the mouse (rectangles, whole cells, deselection), by in-game coordinates, select all,
   invert, clear, undo/redo.
 - Delete the selection, or keep it and delete everything else.
@@ -76,6 +77,16 @@ GitHub Actions builds both packages on every push and attaches them to a draft r
 - Global objects (crops, traps, campfires…), basements and safehouse/faction records are stored in
   global files that are not modified: entries in reset areas may remain.
 - Running-game detection is a heuristic and cannot see a server running on another machine.
+- Tiles added by mods are drawn in a neutral grey on the map.
+
+## Credits
+
+The layout of the chunk content, used only to draw the map, follows the description published by the
+[pzdataspec](https://github.com/cff29546/pzdataspec) project (MIT licence), checked on real saves. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Project Zomboid is a game by The Indie Stone. This project is not affiliated with The Indie Stone and
+does not contain any game file.
 
 ## License
 
